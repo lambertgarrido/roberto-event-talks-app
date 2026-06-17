@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BigQuery Release Notes</title>
+  <meta name="description" content="Browse the latest Google BigQuery release notes and share updates on Twitter/X." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <!-- Background particles -->
+  <div class="bg-particles" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span>
+  </div>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 4L36 12V28L20 36L4 28V12L20 4Z" fill="url(#grad1)" opacity="0.9"/>
+            <path d="M14 18h12M14 22h8" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+            <defs>
+              <linearGradient id="grad1" x1="4" y1="4" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#4285F4"/>
+                <stop offset="1" stop-color="#1a73e8"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1 class="brand-title">BigQuery</h1>
+          <span class="brand-subtitle">Release Notes</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <span id="last-updated" class="last-updated" aria-live="polite"></span>
+        <button id="refresh-btn" class="btn-refresh" aria-label="Refresh release notes">
+          <svg class="spinner-icon" id="spinner" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" stroke-dasharray="40" stroke-dashoffset="10" stroke-linecap="round"/>
+          </svg>
+          <span id="refresh-label">Refresh</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <!-- Stats bar -->
+    <div class="stats-bar" id="stats-bar" style="display:none">
+      <div class="stat-chip">
+        <span class="stat-num" id="stat-count">0</span>
+        <span class="stat-label">Updates</span>
+      </div>
+      <div class="search-wrap">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" class="search-icon">
+          <circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.8"/>
+          <path d="M14 14l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        <input type="search" id="search-input" placeholder="Filter release notes…" aria-label="Filter release notes" />
+      </div>
+    </div>
+
+    <!-- Error state -->
+    <div id="error-state" class="empty-state" style="display:none" role="alert">
+      <div class="empty-icon">⚠️</div>
+      <h2 class="empty-title">Unable to fetch release notes</h2>
+      <p id="error-message" class="empty-desc"></p>
+      <button class="btn-refresh-inline" onclick="fetchNotes()">Try again</button>
+    </div>
+
+    <!-- Empty/initial state -->
+    <div id="empty-state" class="empty-state">
+      <div class="empty-icon">📋</div>
+      <h2 class="empty-title">BigQuery Release Notes</h2>
+      <p class="empty-desc">Hit <strong>Refresh</strong> to load the latest updates from Google Cloud.</p>
+    </div>
+
+    <!-- Cards grid -->
+    <div id="notes-grid" class="notes-grid" aria-label="Release notes list" aria-live="polite"></div>
+  </main>
+
+  <!-- Tweet modal -->
+  <div id="tweet-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" style="display:none">
+    <div class="modal-card">
+      <button class="modal-close" id="modal-close-btn" aria-label="Close tweet composer">✕</button>
+      <div class="modal-header">
+        <div class="x-logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.256 5.627 5.909-5.627Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+        </div>
+        <h2 id="modal-title" class="modal-title">Compose Tweet</h2>
+      </div>
+      <div class="tweet-composer">
+        <textarea id="tweet-text" class="tweet-textarea" maxlength="280" rows="5" aria-label="Tweet text"></textarea>
+        <div class="tweet-footer">
+          <span class="char-count"><span id="char-num">0</span>/280</span>
+          <a id="tweet-link" href="#" target="_blank" rel="noopener noreferrer" class="btn-tweet" id="tweet-btn">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.256 5.627 5.909-5.627Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
+            Post on X
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
