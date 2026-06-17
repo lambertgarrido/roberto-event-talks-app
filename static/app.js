@@ -8,6 +8,9 @@
 let allEntries = [];
 
 // ── DOM Refs ───────────────────────────────────────────
+const themeToggle   = document.getElementById('theme-toggle');
+const sunIcon       = document.querySelector('.sun-icon');
+const moonIcon      = document.querySelector('.moon-icon');
 const refreshBtn    = document.getElementById('refresh-btn');
 const spinner       = document.getElementById('spinner');
 const refreshLabel  = document.getElementById('refresh-label');
@@ -297,4 +300,38 @@ function escAttr(str) {
 }
 
 // ── Auto-load on page ready ────────────────────────────
-document.addEventListener('DOMContentLoaded', fetchNotes);
+function initTheme() {
+  const saved = localStorage.getItem('bq-theme');
+  const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+  const theme = saved || (prefersLight ? 'light' : 'dark');
+  
+  if (theme === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    sunIcon.style.display = 'block';
+    moonIcon.style.display = 'none';
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    sunIcon.style.display = 'none';
+    moonIcon.style.display = 'block';
+  }
+}
+
+themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  if (current === 'light') {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('bq-theme', 'dark');
+    sunIcon.style.display = 'none';
+    moonIcon.style.display = 'block';
+  } else {
+    document.documentElement.setAttribute('data-theme', 'light');
+    localStorage.setItem('bq-theme', 'light');
+    sunIcon.style.display = 'block';
+    moonIcon.style.display = 'none';
+  }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+  fetchNotes();
+});
