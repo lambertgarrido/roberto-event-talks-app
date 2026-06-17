@@ -28,6 +28,9 @@ const charNum       = document.getElementById('char-num');
 const charCount     = tweetTextarea.closest('.tweet-composer').querySelector('.char-count');
 const tweetLink     = document.getElementById('tweet-link');
 
+// Export
+const exportBtn     = document.getElementById('export-btn');
+
 // ── Fetch ──────────────────────────────────────────────
 async function fetchNotes() {
   setLoading(true);
@@ -98,15 +101,56 @@ function buildCard(entry, idx) {
       <a class="btn-read-more" href="${safeLink}" target="_blank" rel="noopener noreferrer">
         Read more <span aria-hidden="true">→</span>
       </a>
-      <button class="btn-tweet-card" data-title="${escAttr(entry.title)}" data-link="${escAttr(entry.link)}" aria-label="Tweet about this update">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.256 5.627 5.909-5.627Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-        </svg>
-        Tweet
-      </button>
+      <div class="card-footer-actions">
+        <button class="btn-copy-card" aria-label="Copy release note to clipboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+          Copy
+        </button>
+        <button class="btn-tweet-card" aria-label="Tweet about this update">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.256 5.627 5.909-5.627Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+          Tweet
+        </button>
+      </div>
     </div>
   `;
 
+  // Copy to clipboard
+  const copyBtn = card.querySelector('.btn-copy-card');
+  copyBtn.addEventListener('click', () => {
+    const text = [
+      entry.title,
+      entry.date,
+      entry.link,
+      '',
+      entry.preview,
+    ].join('\n');
+
+    navigator.clipboard.writeText(text).then(() => {
+      copyBtn.classList.add('copied');
+      copyBtn.querySelector('svg').outerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:13px;height:13px;flex-shrink:0">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>`;
+      const label = copyBtn.childNodes[copyBtn.childNodes.length - 1];
+      label.textContent = ' Copied!';
+      setTimeout(() => {
+        copyBtn.classList.remove('copied');
+        copyBtn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:13px;height:13px;flex-shrink:0">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+          Copy`;
+      }, 2000);
+    });
+  });
+
+  // Tweet
   card.querySelector('.btn-tweet-card').addEventListener('click', () => {
     openTweetModal(entry.title, entry.link);
   });
@@ -185,6 +229,44 @@ document.addEventListener('keydown', (e) => {
 
 // ── Refresh button ─────────────────────────────────────
 refreshBtn.addEventListener('click', fetchNotes);
+
+// ── Export CSV ─────────────────────────────────────────
+function csvEscape(val) {
+  const str = String(val ?? '').replace(/"/g, '""');
+  return `"${str}"`;
+}
+
+function exportToCSV() {
+  // Export whichever entries are currently visible (respects search filter)
+  const visibleCards = notesGrid.querySelectorAll('.note-card');
+  const visibleTitles = new Set(
+    [...visibleCards].map(c => c.querySelector('.card-title a')?.textContent.trim())
+  );
+  const toExport = allEntries.filter(e => visibleTitles.has(e.title));
+
+  if (!toExport.length) return;
+
+  const header = ['Title', 'Date', 'Link', 'Preview'];
+  const rows = toExport.map(e => [
+    csvEscape(e.title),
+    csvEscape(e.date),
+    csvEscape(e.link),
+    csvEscape(e.preview),
+  ].join(','));
+
+  const csv = [header.join(','), ...rows].join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href     = url;
+  a.download = `bigquery-release-notes-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+exportBtn.addEventListener('click', exportToCSV);
 
 // ── Helpers ────────────────────────────────────────────
 function setLoading(on) {
